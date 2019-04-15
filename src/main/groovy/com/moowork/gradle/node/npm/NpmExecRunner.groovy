@@ -1,15 +1,13 @@
 package com.moowork.gradle.node.npm
 
 import com.moowork.gradle.node.exec.ExecRunner
-import com.moowork.gradle.node.exec.NodeExecRunner
-import org.gradle.api.InvalidUserDataException
 import org.gradle.api.Project
 import org.gradle.process.ExecResult
 
 class NpmExecRunner
     extends ExecRunner
 {
-    public NpmExecRunner( final Project project )
+    NpmExecRunner( final Project project )
     {
         super( project )
     }
@@ -17,39 +15,38 @@ class NpmExecRunner
     @Override
     protected ExecResult doExecute()
     {
+        def exec = variant.npmExec
 
-        def exec = this.variant.npmExec
-        def arguments = this.arguments
-
-        if ( this.ext.download )
+        if ( ext.download )
         {
-            def npmBinDir = this.variant.npmBinDir.getAbsolutePath();
+            def separator = File.pathSeparator
+            def npmBinDir = variant.npmBinDir.absolutePath
+            def nodeBinDir = variant.nodeBinDir.absolutePath
+            def nodeModulesBinDir = ext.nodeModulesDir.absolutePath + '/node_modules/.bin'
 
-            def nodeBinDir = this.variant.nodeBinDir.getAbsolutePath();
-
-            def path = npmBinDir + File.pathSeparator + nodeBinDir;
+            def path = npmBinDir + separator + nodeBinDir + separator + nodeModulesBinDir
 
             // Take care of Windows environments that may contain "Path" OR "PATH" - both existing
             // possibly (but not in parallel as of now)
             if ( environment['Path'] != null )
             {
-                environment['Path'] = path + File.pathSeparator + environment['Path']
+                environment.put('Path', path + separator + environment['Path'])
             }
             else
             {
-                environment['PATH'] = path + File.pathSeparator + environment['PATH']
+                environment.put('PATH', path + separator + environment['PATH'])
             }
 
-            def File localNpm = project.file( new File( this.ext.nodeModulesDir, 'node_modules/npm/bin/npm-cli.js' ) )
+            File localNpm = project.file( new File( ext.nodeModulesDir, 'node_modules/npm/bin/npm-cli.js' ) )
             if ( localNpm.exists() )
             {
-                exec = this.variant.nodeExec
+                exec = variant.nodeExec
                 arguments = [localNpm.absolutePath] + arguments
             }
             else if ( !new File(exec).exists() )
             {
-                exec = this.variant.nodeExec
-                arguments = [this.variant.npmScriptFile] + arguments
+                exec = variant.nodeExec
+                arguments = [variant.npmScriptFile] + arguments
             }
         }
         return run( exec, arguments )
